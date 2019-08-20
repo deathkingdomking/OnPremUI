@@ -1,0 +1,6 @@
+FROM node:12.6.0-alpine
+WORKDIR  /root/app
+COPY frontend /root/app
+RUN  yarn install
+EXPOSE 3001
+CMD ["npm", "start"]

@@ -1,0 +1,6 @@
+FROM node:12.6.0-alpine
+WORKDIR  /root/app
+COPY backend /root/app
+RUN  yarn install
+EXPOSE 3000
+CMD ["npm", "start"]

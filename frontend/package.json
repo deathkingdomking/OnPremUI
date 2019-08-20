@@ -1,0 +1,44 @@
+{
+    "name": "camera-flow",
+    "version": "0.1.0",
+    "private": true,
+    "dependencies": {
+        "@material-ui/core": "^4.2.0",
+        "@material-ui/icons": "^4.2.1",
+        "@material-ui/pickers": "^3.1.2",
+        "axios": "^0.19.0",
+        "eslint-config-google": "^0.13.0",
+        "eslint-plugin-react-hooks": "^1.6.1",
+        "prop-types": "^15.7.2",
+        "react": "^16.8.6",
+        "react-dom": "^16.8.6",
+        "react-ideal-image": "^0.0.5",
+        "react-lazyload": "^2.6.2",
+        "react-loading-io": "^1.0.3",
+        "react-scripts": "3.0.1",
+        "react-shimmer": "^2.0.1",
+        "react-waypoint": "^9.0.2",
+        "ws": "^7.1.1"
+    },
+    "scripts": {
+        "start": "react-scripts start",
+        "build": "react-scripts build",
+        "test": "react-scripts test",
+        "eject": "react-scripts eject"
+    },
+    "eslintConfig": {
+        "extends": "react-app"
+    },
+    "browserslist": {
+        "production": [
+            ">0.2%",
+            "not dead",
+            "not op_mini all"
+        ],
+        "development": [
+            "last 1 chrome version",
+            "last 1 firefox version",
+            "last 1 safari version"
+        ]
+    }
+}

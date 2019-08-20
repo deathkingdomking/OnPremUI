@@ -1,0 +1,25 @@
+version: "3"
+services:
+  frontend:
+    build:
+       context: ./
+       dockerfile: ./docker/Dockerfile-frontend
+    restart: always
+    image: fc-frontend:latest
+    ports:
+       - "3001:3000"
+    links:
+       - backend
+    depends_on:
+       - backend
+  backend: 
+    build:
+       context: ./
+       dockerfile: ./docker/Dockerfile-backend
+    image: fc-backend:latest
+    restart: always
+    volumes:
+       - /Users/dakanwang/workspace/on_premise/activity_2stage/out/:/public/images/
+    ports:
+       - "3000:3000"
+
