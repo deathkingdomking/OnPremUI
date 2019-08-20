@@ -32,6 +32,9 @@ const useStyles = makeStyles(theme => ({
       width: 720,
       height: "auto",
       maxHeight: 450
+    },
+    tag: {
+       fontWeight: 600
     }
   }));
 
@@ -54,6 +57,9 @@ export default function VideoModal(props) {
        <p id="simple-modal-description">
           {props.image.location}
       </p>
+        <p id="simple-modal-description" className={classes.tag}>
+            {props.image.behaviors === undefined ? "": props.image.behaviors.substr(0, props.image.behaviors.length -1 )}
+        </p>
       <img className={classes.img} src={`${HOST}${props.image.source}`}/>
     </div>
     </Modal>

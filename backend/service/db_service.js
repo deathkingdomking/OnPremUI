@@ -18,27 +18,27 @@ const DB = "./dbsql";
 async function getConsumerEndPoint(){
     try{
         const createConsumerOption = {
-         method: "POST",
-         uri: `${BASE_URL}`,
-         json: true,
-         body: {
-             "name": "my-consumer",
-             "format": "avro",
-             "auto.offset.reset": "latest",
-             "auto.commit.enable": "false",
-         },
-         headers: commonHeader
-     };
+            method: "POST",
+            uri: `${BASE_URL}`,
+            json: true,
+            body: {
+                "name": "my-consumer",
+                "format": "avro",
+                "auto.offset.reset": "earliest",
+                "auto.commit.enable": "true",
+            },
+            headers: commonHeader
+        };
         let consumers = await rp(createConsumerOption);
         const subscriptionOption = {
-        method: "POST",
-        uri: `${BASE_URL}/instances/${consumers.instance_id}/subscription`,
-        headers: commonHeader,
-        json: true,
-        body:{
-            "topics": ["eventcollector.local.science.recognize-test"]
-        },
-    };
+            method: "POST",
+            uri: `${BASE_URL}/instances/${consumers.instance_id}/subscription`,
+            headers: commonHeader,
+            json: true,
+            body:{
+                "topics": ["eventcollector.local.science.recognize-test"]
+            },
+        };
         await rp(subscriptionOption);
         return `${BASE_URL}/instances/${consumers.instance_id}`;
     } catch (e) {
@@ -54,11 +54,12 @@ async function  consume(endpoint){
         headers: commonHeader,
         json: true,
     };
-    return (await rp(consumerOption)).map((msg) => msg.value)
+    let res = await rp(consumerOption)
+    return res.map((msg) => msg.value)
 }
 
 function create_table(cb){
-     db.run("CREATE TABLE IF NOT EXISTS recognition (source TEXT, location TEXT, floor TEXT, title TEXT, id TEXT, timestamp INTEGER)", cb)
+    db.run("CREATE TABLE IF NOT EXISTS recognition (source TEXT, location TEXT, titile TEXT, id TEXT, timestamp INTEGER, behaviors TEXT)", cb)
 }
 function readRows(params, cb) {
     let query = "SELECT * FROM recognition";
@@ -88,12 +89,26 @@ function readRows(params, cb) {
         }
     });
 }
+function formatBehaviours(row){
+    let behaves = new Set();
+    if(row.result.behaviors !== undefined) {
+        row.result.behaviors.forEach((beh) => {
+             if(beh != "") {
+                 beh.split(";").forEach((b) => {
+                     behaves.add(b)
+                 })
+             }
+        });
+        return  [...behaves].join(",");
+    }
+    else {
+        return "";
+    }
+}
 function insert_data(data, cb) {
     let stmt = db.prepare("INSERT INTO recognition VALUES (?, ?, ?, ?, ?, ?)");
     data.forEach((row) => {
-        row_rec = [row.result.source, row.object.Displayname, row.object.area.displayName, row.description, row.id, row.ec_event_time]
-        console.log(`insertion of ${row_rec} into db`)
-        stmt.run([row.result.source, row.object.Displayname, row.object.area.displayName, row.description, row.id, row.ec_event_time])
+        stmt.run([row.result.source, "CNZH", row.description, row.id, row.ec_event_time, formatBehaviours(row)])
     });
     stmt.finalize(cb);
 }
@@ -116,15 +131,14 @@ function drawRectangle(msg, readable){
         }
     });
     const rectComposition= sharp()
-            .composite(rects)
-            .png();
+        .composite(rects)
+        .png();
     let outputFile = fs.createWriteStream(`./public/images/${msg.ec_event_time}.png`);
     readable
         .pipe(rectComposition)
         .pipe(outputFile);
 }
-
-/*async function init(cb){
+async function init(cb){
     db = new sqlite3.Database(DB);
     create_table();
     let endpoint = await getConsumerEndPoint();
@@ -140,7 +154,8 @@ function drawRectangle(msg, readable){
                 readable._read = () => {} ;
                 readable.push(buf);
                 readable.push(null);
-                drawRectangle(msg, readable);
+                let outputFile = fs.createWriteStream(`./public/images/${msg.ec_event_time}.png`);
+                readable.pipe(outputFile);
             })()));
             msgs.forEach((msg) => {
                 msg.result.source = `/public/images/${msg.ec_event_time}.png`;
@@ -154,63 +169,8 @@ function drawRectangle(msg, readable){
             console.error(e)
         }
     }, 1000)
-}*/
-
-function process_stream_and_do_insert(filename) {
-    if (filename.search('json') != -1 && filename.search('kafka') != -1 && fs.existsSync('/public/images/' + filename)) {
-        var kafkaString = fs.readFileSync('/public/images/' + filename, 'utf8')            
-        var obj = JSON.parse(kafkaString);
-
-        fs.copyFile('/public/images/' + obj.result.source, './public/images/' + obj.result.source, (err) => {
-            if (err) throw err;
-            console.log('image was copied');
-        });
-
-        obj.result.source = '/public/images/' + obj.result.source
-        obj.ec_event_time = obj.ec_event_time * 1000
-        console.log(obj)
-        obj.id = uuidv4()  
-
-        insert_data([obj], () => {
-            console.log(`insertion of new data finished`)
-        });
-    }   
 }
-
-
-async function init(cb){
-    console.log('init db!!!')
-    db = new sqlite3.Database(DB);
-    create_table();
-    // let endpoint = await getConsumerEndPoint();
-
-    fs.readdir('/public/images/', function (err, files) {
-        //handling error
-        if (err) {
-            return console.log('Unable to scan directory: ' + err);
-        } 
-        //listing all files using forEach
-        files.forEach(function (file) {
-            // Do whatever you want to do with the file
-            console.log(file); 
-            process_stream_and_do_insert(file)
-        });
-    });
-        
-
-    /*chokidar.watch('/public/images/',  {ignored: /(^|[\/\\])\../}).on('add', (eventType, filename) => {
-        console.log(eventType);
-        console.log(filename);  
-        process_stream_and_do_insert(filename)
-    })*/
-
-    fs.watch('/public/images/', (eventType, filename) => {
-        console.log(eventType);
-        console.log(filename);
-        process_stream_and_do_insert(filename)
-    })
-}
-
+init(() => console.log("a"));
 module.exports = {
     consume: init,
     query: readRows,

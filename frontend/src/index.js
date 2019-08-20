@@ -62,6 +62,7 @@ export default function ImageFlow() {
                   source: event.result.source,
                   title: event.description,
                   timestamp: event.ec_event_time,
+                  behaviors: event.result.behaviors,
                   location: "CNZH",
                   id: event.id,
               }
