@@ -138,10 +138,53 @@ function drawRectangle(msg, readable){
         .pipe(rectComposition)
         .pipe(outputFile);
 }
+
+
+function process_stream_and_do_insert(filename) {
+    if (filename.search('json') != -1 && filename.search('kafka') != -1 && fs.existsSync('/public/images/' + filename)) {
+        var kafkaString = fs.readFileSync('/public/images/' + filename, 'utf8')            
+        var obj = JSON.parse(kafkaString);
+
+        if (obj.result.source.search('http') != -1) {
+            return
+        }
+
+        fs.copyFile('/public/images/' + obj.result.source, './public/images/' + obj.result.source, (err) => {
+            if (err) throw err;
+            console.log('image was copied');
+        });
+
+        obj.result.source = '/public/images/' + obj.result.source
+        obj.ec_event_time = obj.ec_event_time * 1000
+        console.log(obj)
+        obj.id = uuidv4()  
+
+        insert_data([obj], () => {
+            console.log(`insertion of new data finished`)
+        });
+    }   
+}
+
+
 async function init(cb){
     db = new sqlite3.Database(DB);
     create_table();
     let endpoint = await getConsumerEndPoint();
+
+    console.log('started to read data to init')
+    fs.readdir('/public/images/', function (err, files) {
+        //handling error
+        if (err) {
+            return console.log('Unable to scan directory: ' + err);
+        } 
+        //listing all files using forEach
+        files.forEach(function (file) {
+            // Do whatever you want to do with the file
+            console.log(file); 
+            process_stream_and_do_insert(file)
+        });
+    });
+
     setInterval(async () => {
         try{
             let msgs = await consume(endpoint);
@@ -151,7 +194,7 @@ async function init(cb){
                     encoding: null,
                 });
                 const readable = new Readable();
-                readable._read = () => {} ;
+                readable._read = () => {};
                 readable.push(buf);
                 readable.push(null);
                 let outputFile = fs.createWriteStream(`./public/images/${msg.ec_event_time}.png`);
