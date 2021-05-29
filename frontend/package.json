@@ -18,7 +18,7 @@
         "react-scripts": "3.0.1",
         "react-shimmer": "^2.0.1",
         "react-waypoint": "^9.0.2",
-        "ws": "^7.1.1"
+        "ws": "^7.4.6"
     },
     "scripts": {
         "start": "react-scripts start",
